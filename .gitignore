@@ -1,0 +1,37 @@
+# Virtuelle Umgebung
+venv/
+.venv/
+
+# Python-Bytecode-Dateien
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Log-Dateien
+*.log
+
+# Konfigurationsdateien für Editor und IDE
+.vscode/
+.idea/
+
+# Umgebungsvariablen oder Secrets
+.env
+
+# Build-/Distributionsdateien
+build/
+dist/
+*.egg-info/
+
+# Dependency-Cache
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Test Coverage
+.coverage
+.tox/
+nosetests.xml
+coverage.xml
+
+# Mac-spezifische Dateien
+.DS_Store

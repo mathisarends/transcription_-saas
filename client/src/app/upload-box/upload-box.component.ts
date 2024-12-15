@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import {Component, ElementRef, HostBinding, HostListener, Renderer2, signal, viewChild} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
+import {ProgressBarComponent} from "../progress-bar/progress-bar.component";
 
 @Component({
   selector: 'app-upload-box',
@@ -12,36 +13,45 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './upload-box.component.scss',
 })
 export class UploadBoxComponent {
+  fileInput = viewChild("fileInput")
+  uploadValue = signal(0);
+
+  @HostBinding('class.dragover') isDragOver = signal(false);
+
   openFileSelector(): void {
-    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-    fileInput.click();
+    if (!this.fileInput()) {
+      return;
+    }
+
+    (this.fileInput() as ElementRef).nativeElement.click();
   }
 
-  // Wird aufgerufen, wenn Dateien per Drag & Drop fallen gelassen werden
+  @HostListener('dragover', ['$event'])
+  onDragOver(event: DragEvent): void {
+    console.log("event", event);
+    event.preventDefault();
+    this.isDragOver.set(true);
+  }
+
+  @HostListener('dragleave', ['$event'])
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragOver.set(false);
+  }
+
+  @HostListener('drop', ['$event'])
   onFileDrop(event: DragEvent): void {
     event.preventDefault();
+
+    this.isDragOver.set(false);
     this.handleFiles(event.dataTransfer?.files);
-    this.removeDragClass();
   }
 
-  // Fügt einen visuellen Hinweis beim Drag hinzu
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    (event.currentTarget as HTMLElement).classList.add('dragover');
-  }
-
-  // Entfernt den visuellen Hinweis beim Verlassen
-  onDragLeave(event: DragEvent): void {
-    this.removeDragClass();
-  }
-
-  // Wird aufgerufen, wenn Dateien über das File-Input ausgewählt werden
   onFileSelected(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    this.handleFiles(target.files);
+    const input = event.target as HTMLInputElement;
+    this.handleFiles(input.files);
   }
 
-  // Dateien verarbeiten
   private handleFiles(fileList: FileList | null | undefined): void {
     if (!fileList) return;
 
@@ -52,13 +62,22 @@ export class UploadBoxComponent {
 
     if (files.length > 0) {
       console.log('Ausgewählte Dateien:', files);
+      this.simulateUpload();
     } else {
       console.warn('Nur MP3- und WAV-Dateien sind erlaubt.');
     }
   }
 
-  private removeDragClass(): void {
-    const uploadBox = document.querySelector('.upload-box');
-    uploadBox?.classList.remove('dragover');
+  private simulateUpload(): void {
+    this.uploadValue.set(0);
+    const interval = setInterval(() => {
+      const currentValue = this.uploadValue();
+      if (currentValue >= 100) {
+        clearInterval(interval);
+        console.log('Upload abgeschlossen');
+      } else {
+        this.uploadValue.set(currentValue + 10);
+      }
+    }, 500);
   }
 }

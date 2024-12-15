@@ -1,21 +1,14 @@
-<div
-  class="upload-box"
-  (drop)="onFileDrop($event)"
-  (dragover)="onDragOver($event)"
-  (dragleave)="onDragLeave($event)"
->
   <p>Ziehe hier deine MP3- oder WAV-Dateien hinein oder</p>
   <input
     type="file"
+    #fileInput
     id="fileInput"
     hidden
     (change)="onFileSelected($event)"
     accept=".mp3, .wav"
   />
-  <label for="fileInput">
-    <button mat-raised-button color="accent" (click)="openFileSelector()">
-      <mat-icon>cloud_upload</mat-icon>
-      Dateien auswählen
-    </button>
-  </label>
-</div>
+  <button mat-raised-button color="accent" (click)="openFileSelector()">
+    <mat-icon>cloud_upload</mat-icon>
+    Dateien auswählen
+  </button>
+

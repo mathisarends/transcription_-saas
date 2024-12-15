@@ -14,10 +14,12 @@ p {
   font-size: 1rem;
 }
 
-input[type="file"] {
+input[type=file] {
   display: none;
 }
 
 button {
   margin-top: 1rem;
 }
+
+/*# sourceMappingURL=upload-box.component.css.map */
