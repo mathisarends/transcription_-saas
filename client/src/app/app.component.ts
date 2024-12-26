@@ -5,7 +5,6 @@ import { MatInputModule } from '@angular/material/input';
 import { HeaderComponent } from './header/header.component';
 import { MatIconModule } from '@angular/material/icon';
 import { UploadBoxComponent } from './upload-box/upload-box.component';
-import {ProgressBarComponent} from "./progress-bar/progress-bar.component";
 
 @Component({
   selector: 'app-root',
