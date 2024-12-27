@@ -110,6 +110,17 @@ def split_audio(file_path, output_dir, segments):
         # Segment speichern
         segment_audio.export(output_file, format="wav")
         print(f"Gespeichert: {output_file}")
+        
+def filter_short_segments(segments, duration_threshold=1):
+    """
+    Entfernt alle Segmente, deren Dauer kürzer als ein bestimmter Schwellenwert ist.
+
+    :param segments: Liste von Segmenten.
+    :param duration_threshold: Schwellenwert für die Mindestdauer in Sekunden.
+    :return: Gefilterte Liste von Segmenten.
+    """
+    filtered_segments = [segment for segment in segments if segment['duration'] >= duration_threshold]
+    return filtered_segments
 
 
 if __name__ == "__main__":
@@ -117,12 +128,14 @@ if __name__ == "__main__":
 
     # Daten verarbeiten
     speaker_entries, total_speaking_times = parse_diarization_file(file_path)
-    
     merged_speaker_entries = merge_short_pauses(speaker_entries)
+    
+    filtered_speaker_entries = filter_short_segments(merged_speaker_entries)
+    
 
     # Ergebnisse anzeigen
     print("Einträge der Sprecher:")
-    for entry in merged_speaker_entries:
+    for entry in filtered_speaker_entries:
         print(entry)
 
     print("\nGesamtsprechzeiten:")
@@ -133,4 +146,4 @@ if __name__ == "__main__":
     output_directory = "./src/audio_segments"
     audio_file_path = "./src/interview_trimmed.wav"
     
-    split_audio(audio_file_path, output_directory, merged_speaker_entries)
+    split_audio(audio_file_path, output_directory, filtered_speaker_entries)
