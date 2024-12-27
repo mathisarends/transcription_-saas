@@ -8,89 +8,51 @@ class Transcriber:
     def __init__(self):
         self.openai = OpenAI()
 
-    def transcribe(self, filePath: str) -> str:
+    def transcribe(self, filePath: str, save_in_fs=True) -> dict:
         """
-        Transkribiert die angegebene Audiodatei mit OpenAI Whisper.
+        Transkribiert die angegebene Audiodatei mit OpenAI Whisper und gibt Zeitstempel zurück.
         """
         audio_file = open(filePath, "rb")
         transcription = self.openai.audio.transcriptions.create(
-            model="whisper-1", 
-            file=audio_file
+            model="whisper-1",
+            file=audio_file,
+            response_format="json"
         )
         
-        self.save_transcript_in_fs(filePath, transcription.text)
-        
-        return transcription.text
+        print("transcription", transcription)
+
+        if save_in_fs:
+            self.save_transcript_in_fs(filePath, transcription)
+
+        return transcription
     
-    def save_transcript_in_fs(self, filePath: str, transcript: str):
+    def save_transcript_in_fs(self, filePath: str, transcription: dict):
         """
-        Speichert das gegebene Transkript als Datei im Dateisystem.
+        Speichert das Transkript mit Zeitstempeln als Datei im Dateisystem.
 
         :param filePath: Der Pfad zur ursprünglichen Audiodatei.
-        :param transcript: Das Transkript als String.
+        :param transcription: Das Transkript als JSON-Objekt.
         """
         output_dir = "./src/transcripts"
         os.makedirs(output_dir, exist_ok=True)
 
         base_name = os.path.basename(filePath)
-        transcript_file = os.path.join(output_dir, f"{os.path.splitext(base_name)[0]}_transcript.txt")
+        transcript_file = os.path.join(output_dir, f"{os.path.splitext(base_name)[0]}_transcript.json")
 
+        # Transkript im JSON-Format speichern
         with open(transcript_file, "w", encoding="utf-8") as f:
-            f.write(transcript) 
+            import json
+            json.dump(transcription, f, indent=4, ensure_ascii=False)
 
-        print(f"Transkript gespeichert unter: {transcript_file}")
-        
+        print(f"Transkript mit Zeitstempeln gespeichert unter: {transcript_file}")
 
-    def assign_speakers(self, transcription: str, context: str, speakers: dict) -> str:
-
-        # Dynamisches System-Prompt basierend auf den Speaker-Keys
-        speaker_labels = "\n".join([f"{key}: [Text des {key}]" for key in speakers.keys()])
-        print(f"speaker_labels {speaker_labels}")
-        
-        system_prompt = (
-            "Du bist ein Assistent, der Interviewtranskripte annotiert. "
-            "Deine Aufgabe ist es, jedem Absatz im Transkript Sprecherlabels zuzuweisen. "
-            "Der Interviewer stellt Fragen, die in der Regel kürzer sind, während der Experte längere und detailliertere Antworten gibt. "
-            "Berücksichtige, dass der Sprachanteil des Experten in diesem Interview deutlich höher ist und daran erkennbar sein könnte, "
-            "dass seine Aussagen ausführlicher und inhaltlich spezifischer sind. "
-            f"Antwort im folgenden Format:\n\n{speaker_labels}"
-        )
-            
-        # Sprecherbeschreibungen als Teil des Benutzerprompts
-        speaker_info = "\n".join([f"{key}: {value}" for key, value in speakers.items()])
-        
-        print(f"speaker_info {speaker_info}")
-        
-        user_prompt = (
-            f"Das Thema des Interviews ist: {context}\n"
-            f"Die folgenden Sprecher sind beteiligt:\n{speaker_info}\n\n"
-            f"Hier ist das rohe Transkript:\n\n{transcription}\n\n"
-            f"Bitte ordne jedem Absatz die entsprechenden Sprecherlabels zu."
-        )
-
-        # GPT-Ausgabe generieren
-        response = self.openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-        )
-        
-        return response.choices[0].message.content
-
-
+# TODO: hierfür kann man eventuell auch besser die WhisperAPI benutzen die Open Source ist mit entsprechenden Zeitstempeln
+# Lösung kann dann mit pyannote kombiniert werden um die Sprecher richtig zu klassifzieren
 if __name__ == "__main__":
     transcriber = Transcriber()
     
-    transcription = transcriber.transcribe("./src/interview_trimmed.mp3")
-    
-    context = "Das Interview behandelt die historische Entwicklung der Anatomie und Zahnmedizin, einschließlich persönlicher Erfahrungen mit Präparierkursen und prägenden Persönlichkeiten."
-    speakers = {
-        "Interviewer": "Interviewer, der Fragen zur Geschichte der Anatomie und Zahnmedizin stellt.",
-        "Experte": "Experte und Zeitzeuge, der über seine Erfahrungen in anatomischen Instituten und Präparierkursen berichtet."
-    }
-    
-    # Annotiere die Transkription
-    transcription = transcriber.assign_speakers(transcription, context, speakers)
-    print("transcription", transcription)
+    transcription = transcriber.transcribe("./src/interview_trimmed.mp3", save_in_fs=False)
+
+    # Ausgabe der Transkriptionssegmente mit Zeitstempeln
+    for segment in transcription.get("segments", []):
+        print(f"Start: {segment['start']}s, Ende: {segment['end']}s, Text: {segment['text']}")

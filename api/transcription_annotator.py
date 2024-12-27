@@ -6,26 +6,35 @@ load_dotenv()
 
 class TranscriptionAnnotator:
     def __init__(self):
-        self.openai = OpenAI()        
+        self.openai = OpenAI()
+    
+    def assign_speakers(self, transcription: str, context: str, speakers: dict) -> str:
+        """
+        Ordnet Sprecherlabels auf Basis der Rollen der Sprecher zu.
 
-    def assign_speakers(self, transcription: str, context: str, speakers: dict) -> str:        
+        :param transcription: Der Transkripttext.
+        :param context: Kontext des Interviews.
+        :param speakers: Beschreibung der Sprecherrollen.
+        :return: Annotiertes Transkript.
+        """
+        # System-Prompt
         system_prompt = (
             "Du bist ein Assistent, der Interviewtranskripte annotiert. "
-            "Deine Aufgabe ist es, jedem Absatz im Transkript Sprecherlabels zuzuweisen (z. B. A, B). "
+            "Deine Aufgabe ist es, jedem Absatz im Transkript Sprecherlabels zuzuweisen (z. B. A für den Interviewer und B für den Experten). "
+            "Beachte, dass der Interviewer nicht nur Fragen stellt, sondern auch kurze Anmerkungen oder Einwürfe wie 'Ah ja' oder 'Interessant' machen kann, "
+            "während der Experte längere Antworten oder Erklärungen gibt. "
             "Antwort im folgenden Format:\n\n"
             "A: [Text des Interviewers]\nB: [Text des Experten]."
         )
-            
-        # Sprecherbeschreibungen als Teil des Benutzerprompts
-        speaker_info = "\n".join([f"{key}: {value}" for key, value in speakers.items()])
-        
-        print(f"speaker_info {speaker_info}")
-        
+    
+        # Benutzer-Prompt
+        speaker_description = "\n".join([f"{key}: {value}" for key, value in speakers.items()])
         user_prompt = (
             f"Das Thema des Interviews ist: {context}\n"
-            f"Die folgenden Sprecher sind beteiligt:\n{speaker_info}\n\n"
+            f"Die folgenden Sprecher sind beteiligt:\n{speaker_description}\n\n"
             f"Hier ist das rohe Transkript:\n\n{transcription}\n\n"
-            f"Bitte ordne jedem Absatz die entsprechenden Sprecherlabels zu."
+            f"Ordne die Absätze den entsprechenden Sprecherlabels A (Interviewer) oder B (Experte) zu. "
+            f"Berücksichtige dabei die Rollen der Sprecher und die typischen Verhaltensweisen in einem solchen Gespräch."
         )
 
         # GPT-Ausgabe generieren
@@ -61,8 +70,8 @@ if __name__ == "__main__":
     
     context = "Das Interview behandelt die historische Entwicklung der Anatomie und Zahnmedizin, einschließlich persönlicher Erfahrungen mit Präparierkursen und prägenden Persönlichkeiten."
     speakers = {
-        "Interviewer": "Interviewer, der Fragen zur Geschichte der Anatomie und Zahnmedizin stellt.",
-        "Experte": "Experte und Zeitzeuge, der über seine Erfahrungen in anatomischen Instituten und Präparierkursen berichtet."
+        "Interviewer": "Interviewer, der Fragen zur Geschichte der Anatomie und Zahnmedizin stellt und kurze Einwürfe wie 'Ah ja' oder 'Interessant' macht.",
+        "Experte": "Experte und Zeitzeuge, der über seine Erfahrungen in anatomischen Instituten und Präparierkursen berichtet und längere Antworten gibt."
     }
     # Transkription aus dem Dateisystem laden
     transcription_path = "./src/transcripts/interview_trimmed_transcript.txt"
